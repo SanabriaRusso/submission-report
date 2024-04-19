@@ -50,10 +50,10 @@ class DB:
             SELECT 
                 (to_timestamp(b.batch_start_epoch) AT TIME ZONE 'UTC')::timestamp without time zone as batch_start, 
                 (to_timestamp(b.batch_end_epoch) AT TIME ZONE 'UTC')::timestamp without time zone as batch_end, 
-                COALESCE(COUNT(s.id), 0) AS total_submissions,
-                COALESCE(COUNT(*) FILTER (WHERE s.validation_error = ''), 0) AS validated_submissions,
-                COALESCE(COUNT(*) FILTER (WHERE s.validation_error != ''), 0) AS unvalidated_submissions,
-                COALESCE(COUNT(*) FILTER (WHERE verified is not true), 0) AS unverified_submissions
+                COUNT(s.id) AS total_submissions,
+                COUNT(*) FILTER (WHERE s.validation_error = '' AND s.id IS NOT NULL) AS validated_submissions,
+                COUNT(*) FILTER (WHERE s.validation_error != '' AND s.id IS NOT NULL) AS unvalidated_submissions,
+                COUNT(*) FILTER (WHERE verified IS NOT TRUE AND s.id IS NOT NULL) AS unverified_submissions
             FROM 
                 bot_logs b 
             LEFT JOIN 
