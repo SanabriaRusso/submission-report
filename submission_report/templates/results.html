@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css"
+        integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
+    <style>
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            padding-top: 30px;
+        }
+    </style>
+    <title>Submission Report</title>
+</head>
+
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top">
+        <div class="container">
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <form class="form-inline" method="get" action="/query">
+                            <input class="form-control mr-2" style="width: 550px;" type="text"
+                                placeholder="Block Producer" id="submitter" name="submitter" value="{{ submitter }}"
+                                required>
+                            <label for="start_date">Start:</label>
+                            <input class="form-control mr-2" type="date" id="start_date" name="start_date"
+                                value="{{ start_date }}" required>
+                            <label for="end_date">End:</label>
+                            <input class="form-control mr-2" type="date" id="end_date" name="end_date"
+                                value="{{ end_date }}" required>
+                            <button class=" btn btn-outline-success" type="submit">Query</button>
+                            <!-- <a href="/" class="btn btn-outline-danger ml-1">Reset</a> -->
+                        </form>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <div class="container mt-5 header-content">
+        <h2 class="font-weight-bold">Submission Report</h2>
+        <p class="text-muted">Set the Block Producer and the time period you want to get the report for. Note that
+            by default, the dates are set for the last 90 days.</p>
+        {% for message in get_flashed_messages(with_categories=False) %}
+        <div class="alert alert-danger">
+            {{ message }}
+        </div>
+        {% endfor %}
+        <hr />
+
+    </div>
+    {% if submitter %}
+    <div class="container mt-4">
+        <h3>Summary Report</h3>
+        <b>Block Producer:</b> {{ submitter }}<br />
+        <b>Period:</b> {{ start_date }} - {{end_date}} ({{ delta }} days)<br /><br />
+
+        <h5>Submissions {{ submissions_status }}</h5>
+        <table class="table table-bordered table-hover">
+            <thead>
+                <tr class="table-secondary">
+                    <th>Total</th>
+                    <th>Valid</th>
+                    <th>Invalid</th>
+                    <th>Not Verified</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for sub in submissions %}
+                <tr>
+                    <td>{{ sub[0] }}</td>
+                    <td
+                        class="{{ 'table-success' if sub[0] == sub[1] > 0 else ('table-danger' if sub[1] == 0 else 'table-warning') }}">
+                        {{ sub[1] }}</td>
+                    <td class="{{ 'table-warning' if sub[2] > 0 else '' }}">{{ sub[2] }}</td>
+                    <td class="{{ 'table-warning' if sub[3] > 0 else '' }}">{{ sub[3] }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <h5>Points {{ total_points_status }}</h5>
+        <table class="table table-bordered table-hover">
+            <thead>
+                <tr class="table-secondary">
+                    <th scope="col">Availability</th>
+                    <th scope="col">Granted</th>
+                    <th scope="col">Available</th>
+                </tr>
+            </thead>
+            <tr>
+                <td class="{{ 'table-danger' if availability != 1 else 'table-success' }}">
+                    {{ (availability * 100) | round(2) }}%
+                </td>
+                <td>{{ total_points }}</td>
+                <td>{{ available_points }}</td>
+            </tr>
+
+        </table>
+
+        <hr />
+        <h3>Detailed Report</h3>
+        {% if bad_submissions %}
+        <h5>Bad Submissions ⚠️</h5>
+        <table class="table table-bordered table-hover">
+            <thead>
+                <tr class="table-secondary">
+                    <th scope="col">Submission Date</th>
+                    <th scope="col">Verified</th>
+                    <th scope="col">Validation Error</th>
+                    <th scope="col">IP</th>
+                    <th scope="col">Block Hash</th>
+                    <th scope="col">State Hash</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for sub in bad_submissions %}
+                <tr>
+                    <td>{{ sub[0] }}</td>
+                    <td>{{ sub[1] }}</td>
+                    <td>{{ sub[2] }}</td>
+                    <td>{{ sub[3] }}</td>
+                    <td>{{ sub[4] }}</td>
+                    <td>{{ sub[5] }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <h5>No Bad Submissions ✅</h5>
+        {% endif %}
+
+        {% if batches_without_points %}
+        <h5>Batches without points {{ batches_without_points_status }}</h5>
+        <table class="table table-bordered table-hover">
+            <thead>
+                <tr class="table-secondary">
+                    <th scope="col">Batch Start</th>
+                    <th scope="col">Batch End</th>
+                </tr>
+            </thead>
+            {% for batch in batches_without_points %}
+            <tr>
+                <td>{{ batch[0] }}</td>
+                <td>{{ batch[1] }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+        {% else %}
+        <h5>No Batches without points {{ batches_without_points_status }}</h5>
+        {% endif %}
+
+        <h5>Submissions Per Batch {{ batch_info_status }}</h5>
+        <table class="table table-bordered table-hover">
+            <thead>
+                <tr class="table-secondary">
+                    <th scope="col">Batch Start</th>
+                    <th scope="col">Batch End</th>
+                    <th scope="col">Total</th>
+                    <th scope="col">Valid</th>
+                    <th scope="col">Invalid</th>
+                    <th scope="col">Not Verified</th>
+                </tr>
+            </thead>
+            {% for batch in batch_info %}
+            <tr>
+                <td>{{ batch[0] }}</td>
+                <td>{{ batch[1] }}</td>
+                <td>{{ batch[2] }}</td>
+                <td
+                    class="{{ 'table-success' if batch[2] == batch[3] > 0 else ('table-danger' if batch[3] == 0 else 'table-warning') }}">
+                    {{ batch[3] }}</td>
+                <td class="{{ 'table-warning' if batch[4] > 0 else '' }}">{{ batch[4] }}</td>
+                <td class="{{ 'table-warning' if batch[5] > 0 else '' }}">{{ batch[5] }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+
+        <h5>Points per Batch {{ points_info_status }}</h5>
+        <table class="table table-bordered table-hover">
+            <thead>
+                <tr class="table-secondary">
+                    <th scope="col">Batch Start</th>
+                    <th scope="col">Batch End</th>
+                    <th scope="col">Points Granted</th>
+                </tr>
+            </thead>
+            {% for point in points_info %}
+            <tr>
+                <td>{{ point[0] }}</td>
+                <td>{{ point[1] }}</td>
+                <td class="{{ 'table-success' if point[2] == 1 else 'table-danger' }}">{{ point[2] }}</td>
+
+            </tr>
+            {% endfor %}
+        </table>
+
+    </div>
+    {% else %}
+    {% endif %}x
+
+</body>
+
+</html>
