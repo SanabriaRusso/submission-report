@@ -10,11 +10,18 @@ class DB:
 
     def bad_submissions(self, submitter, start_date, end_date):
         query = """
-            SELECT submitted_at, verified, validation_error, remote_addr, block_hash, state_hash 
+            SELECT 
+                submitted_at, 
+                verified, 
+                validation_error, 
+                remote_addr, 
+                block_hash, 
+                state_hash 
             FROM submissions_by_submitter 
-            WHERE submitter = %s 
-            AND submitted_at_date BETWEEN %s AND %s
-            AND (validation_error != '' OR verified is not true)
+            WHERE 
+                submitter = %s 
+                AND submitted_at_date BETWEEN %s AND %s
+                AND (validation_error != '' OR verified is not true)
             ORDER BY submitted_at DESC;
         """
         try:
