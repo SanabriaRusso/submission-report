@@ -17,7 +17,7 @@ class DB:
                 remote_addr, 
                 block_hash, 
                 state_hash 
-            FROM submissions_by_submitter 
+            FROM submissions 
             WHERE 
                 submitter = %s 
                 AND submitted_at_date BETWEEN %s AND %s
@@ -40,7 +40,7 @@ class DB:
                 COUNT(*) FILTER (WHERE validation_error = '') AS validated_submissions,
                 COUNT(*) FILTER (WHERE validation_error != '') AS unvalidated_submissions,
                 COUNT(*) FILTER (WHERE verified is not true) AS unverified_submissions
-            FROM submissions_by_submitter 
+            FROM submissions 
             WHERE submitter = %s AND submitted_at_date BETWEEN %s AND %s;
         """
         try:
@@ -64,7 +64,7 @@ class DB:
             FROM 
                 bot_logs b 
             LEFT JOIN 
-                submissions_by_submitter s 
+                submissions s 
             ON 
                 s.submitted_at BETWEEN 
                     (to_timestamp(b.batch_start_epoch) AT TIME ZONE 'UTC')::timestamp without time zone 
