@@ -73,7 +73,7 @@ class DB:
                 AND s.submitter = %s 
                 AND s.submitted_at_date BETWEEN %s AND %s
             WHERE 
-                b.files_processed > 0 
+                b.files_processed > -1 
                 AND (to_timestamp(b.batch_start_epoch) AT TIME ZONE 'UTC')::date >= %s 
                 AND (to_timestamp(b.batch_end_epoch) AT TIME ZONE 'UTC')::date <= %s
             GROUP BY 
@@ -108,7 +108,7 @@ class DB:
             LEFT JOIN 
                 nodes n ON ps.node_id = n.id
             WHERE 
-                b.files_processed > 0
+                b.files_processed > -1
                 AND (to_timestamp(b.batch_start_epoch) AT TIME ZONE 'UTC')::date >= %s 
                 AND (to_timestamp(b.batch_end_epoch) AT TIME ZONE 'UTC')::date <= %s
             GROUP BY 
@@ -140,7 +140,7 @@ class DB:
                 b.id = ps.bot_log_id
             WHERE 
                 ps.bot_log_id IS NULL
-                AND b.files_processed > 0
+                AND b.files_processed > -1
                 AND (to_timestamp(b.batch_start_epoch) AT TIME ZONE 'UTC')::date >= %s 
                 AND (to_timestamp(b.batch_end_epoch) AT TIME ZONE 'UTC')::date <= %s
             ORDER BY 
