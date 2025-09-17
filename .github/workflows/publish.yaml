@@ -11,8 +11,8 @@ on:
         required: true
         type: string
 env:
-  ECR_REPOSITORY_URL: 673156464838.dkr.ecr.us-west-2.amazonaws.com
-  ECR_REPOSITORY_NAME: submission-report
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
   DOCKER_TAG_PREFIX: ${{ github.event.inputs.docker_tag_prefix }}
 
 # This allows a subsequently queued workflow run to interrupt previous runs
@@ -23,36 +23,45 @@ concurrency:
 jobs:
   build-docker-image:
     name: Build and Push Docker Image
-    runs-on: minafoundation-default-runners
+    runs-on: ubuntu-latest
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v3
       - name: 🏷️ Generate Tag
         run: |
           BRANCH_OR_TAG=$(basename ${{ github.ref }})
+          # Convert to lowercase
+          IMAGE_NAME_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          echo "IMAGE_NAME_LOWER=$IMAGE_NAME_LOWER" >> $GITHUB_ENV
+
           if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            PREFIX=${{ env.DOCKER_TAG_PREFIX }}
+            PREFIX=$(echo "${{ env.DOCKER_TAG_PREFIX }}" | tr '[:upper:]' '[:lower:]')
             SHORT_SHA=$(echo $GITHUB_SHA | cut -c1-7)
-            echo "TAG=$PREFIX-$BRANCH_OR_TAG-$SHORT_SHA" >> $GITHUB_ENV
+            TAG_LOWER=$(echo "$PREFIX-$BRANCH_OR_TAG-$SHORT_SHA" | tr '[:upper:]' '[:lower:]')
+            echo "TAG=$TAG_LOWER" >> $GITHUB_ENV
           elif [ "${{ github.event_name }}" == "push" ] && [ -n "${{ github.event.ref }}" ]; then
-            echo "TAG=$BRANCH_OR_TAG" >> $GITHUB_ENV
+            TAG_LOWER=$(echo "$BRANCH_OR_TAG" | tr '[:upper:]' '[:lower:]')
+            echo "TAG=$TAG_LOWER" >> $GITHUB_ENV
           else
             echo "Invalid event. Exiting..."
             exit 1
           fi
-      - name: 🔑 ECR Login
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
+      - name: 🔑 Login to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
       - name: 🔍 Check if Tag already exists
         id: checktag
         uses: tyriis/docker-image-tag-exists@v2.0.1
         with:
-          registry: ${{ env.ECR_REPOSITORY_URL}}
-          repository: ${{ env.ECR_REPOSITORY_NAME }}
+          registry: ${{ env.REGISTRY }}
+          repository: ${{ env.IMAGE_NAME_LOWER }}
           tag: ${{ env.TAG }}
       - name: 🛠️ Build Submission Report Docker Image
         if: steps.checktag.outputs.tag == 'not found'
-        run: DOCKER_BUILDKIT=1 docker build -t ${{ env.ECR_REPOSITORY_URL}}/${{ env.ECR_REPOSITORY_NAME }}:${{ env.TAG }} .
+        run: DOCKER_BUILDKIT=1 docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}:${{ env.TAG }} .
       - name: 🚚 Push Submission Report Docker Image
         if: steps.checktag.outputs.tag == 'not found'
-        run: docker push ${{ env.ECR_REPOSITORY_URL}}/${{ env.ECR_REPOSITORY_NAME }}:${{ env.TAG }}
+        run: docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}:${{ env.TAG }}
