@@ -12,7 +12,7 @@ COPY . .
 
 RUN pip install poetry
 RUN poetry config virtualenvs.create false
-RUN poetry install --no-dev
+RUN poetry install --only=main
 
 ENV PYTHONUNBUFFERED 1
 
